@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>驗證話術工具 5.3</title>
+  <style>
+    
+    :root{
+      --bg: #f4f7fb;
+      --card: rgba(255,255,255,.86);
+      --card-border: rgba(148,163,184,.28);
+      --text: #0f172a;
+      --muted: #64748b;
+      --primary: #2563eb;
+      --primary-soft: rgba(37,99,235,.10);
+      --primary-2: #0f9d58;
+      --danger: #dc2626;
+      --shadow: 0 10px 30px rgba(15,23,42,.08);
+      --shadow-soft: 0 1px 2px rgba(15,23,42,.06);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,"Noto Sans TC",sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(37,99,235,.12), transparent 28%),
+        radial-gradient(circle at top right, rgba(15,157,88,.08), transparent 22%),
+        var(--bg);
+    }
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      background:linear-gradient(180deg, rgba(255,255,255,.35), rgba(255,255,255,0));
+      pointer-events:none;
+    }
+    .shell{
+      position:relative;
+      max-width: 1560px;
+      margin: 0 auto;
+      padding: 18px;
+    }
+    h2{
+      margin: 0;
+      font-size: 26px;
+      letter-spacing: .2px;
+    }
+    .subtitle{
+      margin:6px 0 0;
+      color:var(--muted);
+      font-size:13px;
+    }
+    .layout{
+      display:grid;
+      grid-template-columns: 360px minmax(340px, 1.05fr) minmax(360px, 1.15fr);
+      gap:16px;
+      align-items:start;
+      margin-top: 16px;
+    }
+    .panel{
+      border:1px solid var(--card-border);
+      border-radius:18px;
+      padding:14px;
+      background:var(--card);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+    }
+    .panel h3{
+      margin:0 0 12px;
+      font-size:18px;
+      letter-spacing:.2px;
+    }
+    .toggle{
+      display:flex;
+      gap:8px;
+      margin-bottom:12px;
+      padding:4px;
+      background: rgba(255,255,255,.55);
+      border:1px solid var(--card-border);
+      border-radius:14px;
+    }
+    .toggle button,
+    .actions button,
+    .copy-row button,
+    .top-actions button{
+      border:1px solid var(--card-border);
+      background: rgba(255,255,255,.8);
+      border-radius:12px;
+      cursor:pointer;
+      padding:10px 12px;
+      font-size:14px;
+      transition: transform .06s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease;
+    }
+    .toggle button{
+      flex:1;
+      font-weight:700;
+    }
+    .toggle button.active{
+      border-color: rgba(37,99,235,.55);
+      background: var(--primary-soft);
+      color: var(--primary);
+      box-shadow: inset 0 0 0 1px rgba(37,99,235,.12);
+    }
+    .toggle button:hover,
+    .actions button:hover,
+    .copy-row button:hover,
+    .top-actions button:hover,
+    .template-item:hover{
+      background: #fff;
+      box-shadow: var(--shadow-soft);
+    }
+    .field{ margin-bottom: 11px; }
+    .field label{
+      display:block;
+      font-size: 13px;
+      color: #334155;
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+    .field input{
+      width:100%;
+      padding: 11px 12px;
+      border:1px solid rgba(148,163,184,.45);
+      border-radius:12px;
+      font-size:15px;
+      outline:none;
+      background: rgba(255,255,255,.88);
+      transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+    }
+    .field input:focus{
+      border-color: rgba(37,99,235,.8);
+      box-shadow: 0 0 0 4px rgba(37,99,235,.12);
+      background:#fff;
+    }
+    .actions,
+    .copy-row,
+    .top-actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .actions{ margin-top: 2px; }
+    .actions button,
+    .copy-row button,
+    .top-actions button{
+      color:#0f172a;
+      font-weight:700;
+    }
+    .small{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:10px;
+      line-height:1.55;
+    }
+    .top-actions{ margin-bottom: 12px; }
+    .template-list{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      max-height:74vh;
+      overflow:auto;
+      padding-right:2px;
+      scrollbar-width: thin;
+    }
+    .template-item{
+      width:100%;
+      display:grid;
+      grid-template-columns: 24px 1fr;
+      gap:10px;
+      align-items:start;
+      border:1px solid rgba(148,163,184,.38);
+      background: rgba(255,255,255,.82);
+      border-radius:14px;
+      padding:11px 12px;
+      cursor:pointer;
+      text-align:left;
+      user-select:none;
+      white-space:pre-wrap;
+      font-size:14px;
+      line-height:1.42;
+      transition: transform .06s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
+    }
+    .template-item:active{ transform: scale(.998); }
+    .template-item.drag-over{
+      border-color: rgba(15,157,88,.7);
+      box-shadow: inset 0 0 0 2px rgba(15,157,88,.14);
+    }
+    .template-item.selected{
+      border-color: rgba(37,99,235,.75);
+      background: var(--primary-soft);
+      box-shadow: inset 0 0 0 1px rgba(37,99,235,.12);
+    }
+    .handle{
+      font-size:16px;
+      line-height:1;
+      color:#64748b;
+      padding-top:1px;
+      cursor:grab;
+      user-select:none;
+    }
+    .item-text{ min-width:0; }
+    .num{
+      color: var(--muted);
+      margin-right: 6px;
+      font-weight:700;
+    }
+    .preview-block{ margin-bottom:14px; }
+    .preview-label{
+      font-size:13px;
+      color:var(--muted);
+      margin-bottom:6px;
+      font-weight:800;
+      letter-spacing:.2px;
+      text-transform: uppercase;
+    }
+    pre{
+      margin:0;
+      min-height: 176px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      border:1px solid rgba(148,163,184,.42);
+      border-radius:14px;
+      padding:14px;
+      background: rgba(248,250,252,.92);
+      font-family: inherit;
+      font-size:14px;
+      line-height:1.62;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.6);
+    }
+    .grid-fix{ min-width: 0; }
+    @media (max-width: 1200px){
+      .layout{ grid-template-columns:1fr; }
+      .template-list{ max-height: 400px; }
+      .shell{ padding: 14px; }
+    }
+
+
+.caseTab{
+  min-height:48px !important;
+  padding:12px 18px !important;
+  font-size:16px !important;
+  font-weight:700 !important;
+  border-radius:14px !important;
+}
+.caseClose{
+  margin-left:8px;
+  color:#dc2626;
+  font-weight:700;
+  font-size:18px;
+}
+
+</style>
+</head>
+<body>
+  <h2>驗證話術工具 6.2</h2>
+  <div style="color:#666;font-size:13px;margin:4px 0 14px;">多案件分頁｜拖曳排序｜話術一鍵複製</div>
+
+  
+<div class="casebar" id="caseBar"></div>
+
+<div class="layout grid-fix">
+    <div class="panel">
+      <h3>案件資料</h3>
+
+      <div class="toggle" aria-label="支付方式">
+        <button type="button" id="payGcash" class="active">GCash</button>
+        <button type="button" id="payPaymaya">Paymaya</button>
+      </div>
+
+      <div class="field">
+        <label for="account">會員帳號</label>
+        <input id="account" autocomplete="off" />
+      </div>
+
+      <div class="field">
+        <label for="wallet">GCash / Paymaya / 銀行卡號</label>
+        <input id="wallet" autocomplete="off" />
+      </div>
+
+      <div class="field">
+        <label for="realName">會員真實姓名</label>
+        <input id="realName" autocomplete="off" />
+      </div>
+
+      <div class="field">
+        <label for="bankName">銀行名稱</label>
+        <input id="bankName" autocomplete="off" />
+      </div>
+
+      <div class="field">
+        <label for="turnover">流水不足金額</label>
+        <input id="turnover" autocomplete="off" />
+      </div>
+
+      <div class="field">
+        <label for="custom">自訂內容</label>
+        <input id="custom" autocomplete="off" />
+      </div>
+
+      <div class="actions">
+        <button type="button" id="clearBtn">清除案件資料</button>
+        <button type="button" id="undoBtn">復原上一筆</button>
+      </div>
+
+      <div class="small">
+        Enter 會直接跳下一欄。<br />
+        清除後會回到會員帳號欄位。<br />
+        Ctrl + Delete 也可以清除案件資料。
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>話術列表</h3>
+      <div class="top-actions">
+        <button type="button" id="restoreBtn">恢復 Excel 原始順序</button>
+      </div>
+      <div class="template-list" id="templateList"></div>
+    </div>
+
+    <div class="panel">
+      <h3 id="selectedTitle">請選擇一則話術</h3>
+      <div class="preview-block">
+        <div class="preview-label">中文</div>
+        <pre id="previewZh"></pre>
+      </div>
+      <div class="preview-block">
+        <div class="preview-label">English</div>
+        <pre id="previewEn"></pre>
+      </div>
+      <div class="copy-row">
+        <button type="button" id="copyZh">複製中文</button>
+        <button type="button" id="copyEn">複製英文</button>
+        <button type="button" id="copyBoth">複製中英</button>
+      </div>
+      <div class="small">拖曳話術即可排序，排序會自動記住。</div>
+    </div>
+  </div>
+
+<script>
+const ORIGINAL_TEMPLATES = [{"id": "r001", "sourceRow": 1, "zh": "客服已驗證", "en": "", "kind": "excel"}, {"id": "r002", "sourceRow": 2, "zh": "已達流水", "en": "", "kind": "excel"}, {"id": "r003", "sourceRow": 3, "zh": "後續已存款且達流水", "en": "", "kind": "excel"}, {"id": "r004", "sourceRow": 4, "zh": "已使用正確GCASH出款", "en": "", "kind": "excel"}, {"id": "r009", "sourceRow": 9, "zh": "免費出款", "en": "Reject withdraw : 【】\nThe member applied free bonus without deposit. Please call the member to verify. \nWe will pass the bonus after the verification.", "kind": "excel"}, {"id": "r010", "sourceRow": 10, "zh": "流水不足", "en": "Reject withdraw : 【】\nReason：Turnover isn't enough.\nTurnover isn't enough, need more than【0】.", "kind": "excel"}, {"id": "r011", "sourceRow": 11, "zh": "GCash【】姓名跟會員姓名不一樣", "en": "Username：\nGCash：\nThe name of the bank information and personal information are diffrent from GCash, please contact the member to modify it. Thank you!", "kind": "excel"}, {"id": "r012", "sourceRow": 12, "zh": "GCash【】已達出款月限額 故拒絕出款", "en": "Username：\nGCash：\nThe member's monthly quota is full and cannot be withdraw.", "kind": "excel"}, {"id": "r013", "sourceRow": 13, "zh": "GCash【】未驗證", "en": "Username：\nGCash：\nGCash has no verification, so the system couldn't allow withdrawals.", "kind": "excel"}, {"id": "r014", "sourceRow": 14, "zh": "GCash【】未註冊", "en": "Username：\nGCash：\nThis member didn't registered GCash, so the system couldn't allow withdrawal.", "kind": "excel"}, {"id": "r015", "sourceRow": 15, "zh": "請客服提供GCash驗證截圖", "en": "Please help provide GCash screenshots, thank you\nUsername：\nGCash：", "kind": "excel"}, {"id": "r016", "sourceRow": 16, "zh": "首次使用該卡號，待會員提供【：】驗證截圖後出款", "en": "Username：\nBank：\nBank account：\nAsk the member to provide bank verification before making the withdraw.", "kind": "excel"}, {"id": "r017", "sourceRow": 17, "zh": "GCash【】帳號錯誤", "en": "Username：\nGCash：\nGCash number is wrong", "kind": "excel"}, {"id": "r018", "sourceRow": 18, "zh": "會員GCash【】錢包餘額過多，請會員減少該卡號額度或更換其他卡號後重新提交。", "en": "Reject withdraw : \nGCash：\nReason：The member's GCash balance is too large,we cannot withdraw to this account.Please notify the member to reduce the GCash balance or change to another account and reapply.", "kind": "excel"}, {"id": "r019", "sourceRow": 19, "zh": "會員沒有申請活動", "en": " didn't apply the promotion.", "kind": "excel"}, {"id": "r020", "sourceRow": 20, "zh": "請會員使用APP登入並申請優惠", "en": " Please download and log in by the APP to apply for this promotion.", "kind": "excel"}, {"id": "r021", "sourceRow": 21, "zh": "會員機碼多重帳號", "en": " user's APP key has more than one account, so we rejected his promotion of free100.", "kind": "excel"}, {"id": "r023", "sourceRow": 23, "zh": "已提供【：】驗證截圖", "en": "", "kind": "excel"}, {"id": "r024", "sourceRow": 24, "zh": "已提供【GCash：】驗證截圖", "en": "", "kind": "excel"}, {"id": "r025", "sourceRow": 25, "zh": "已提供【GCash：】驗證截圖+免費出款已驗證", "en": "", "kind": "excel"}, {"id": "r026", "sourceRow": 26, "zh": "【GCash：】未顯示名稱", "en": "", "kind": "excel"}, {"id": "r027", "sourceRow": 27, "zh": "後續改為GCASH【】出款，姓名正確", "en": "", "kind": "excel"}, {"id": "r028", "sourceRow": 28, "zh": "已更新GCASH【】戶名與後台一致", "en": "", "kind": "excel"}, {"id": "r029", "sourceRow": 29, "zh": "會員帳號錯誤", "en": " wrong username", "kind": "excel"}, {"id": "r030", "sourceRow": 30, "zh": "會員代理錯誤", "en": " diffferet agent", "kind": "excel"}, {"id": "r031", "sourceRow": 31, "zh": "重新提交", "en": " reapply", "kind": "excel"}, {"id": "r032", "sourceRow": 32, "zh": "重新提交", "en": " reapply", "kind": "excel"}, {"id": "r033", "sourceRow": 33, "zh": "沒有申請", "en": " no apply", "kind": "excel"}, {"id": "r034", "sourceRow": 34, "zh": "成功", "en": " success", "kind": "excel"}, {"id": "r035", "sourceRow": 35, "zh": "會員有其他活動，無法申請", "en": " has another promotion now, plz unlock promotion first or apply later after complete his/her promotion", "kind": "excel"}, {"id": "r036", "sourceRow": 36, "zh": "會員等級只有1等", "en": " only lv.1.", "kind": "excel"}, {"id": "r037", "sourceRow": 37, "zh": " 請協助下發並提供回單，謝謝", "en": "", "kind": "excel"}, {"id": "extra_realname_nonfirst", "sourceRow": 1001, "zh": "會員真實姓名為【真實姓名】，使用非本人GCASH【】，故拒絕出款", "en": "Username：\nReal Name：\nWrong Paymaya：\n\nThe member doesn't use his own 【付款方式】, so we'll reject this withdraw.", "kind": "extra"}];
+const STORAGE_ORDER = 'verification_talk_tool_53_order';
+const STORAGE_STATE = 'verification_talk_tool_53_state';
+const STORAGE_SNAPSHOT = 'verification_talk_tool_53_snapshot';
+
+const els = {
+  account: document.getElementById('account'),
+  wallet: document.getElementById('wallet'),
+  realName: document.getElementById('realName'),
+  bankName: document.getElementById('bankName'),
+  turnover: document.getElementById('turnover'),
+  custom: document.getElementById('custom'),
+  payGcash: document.getElementById('payGcash'),
+  payPaymaya: document.getElementById('payPaymaya'),
+  templateList: document.getElementById('templateList'),
+  selectedTitle: document.getElementById('selectedTitle'),
+  previewZh: document.getElementById('previewZh'),
+  previewEn: document.getElementById('previewEn'),
+  clearBtn: document.getElementById('clearBtn'),
+  undoBtn: document.getElementById('undoBtn'),
+  restoreBtn: document.getElementById('restoreBtn'),
+  copyZh: document.getElementById('copyZh'),
+  copyEn: document.getElementById('copyEn'),
+  copyBoth: document.getElementById('copyBoth'),
+};
+
+const inputOrder = [els.account, els.wallet, els.realName, els.bankName, els.turnover, els.custom];
+let templates = [...ORIGINAL_TEMPLATES];
+let currentTemplateId = null;
+let lastSnapshot = null;
+let dragId = null;
+
+function makeTemplateMap() {
+  const map = new Map();
+  templates.forEach(t => map.set(t.id, t));
+  return map;
+}
+
+function getPayType() {
+  return els.payPaymaya.classList.contains('active') ? 'Paymaya' : 'GCash';
+}
+
+function setPayType(type) {
+  const isPaymaya = type === 'Paymaya';
+  els.payGcash.classList.toggle('active', !isPaymaya);
+  els.payPaymaya.classList.toggle('active', isPaymaya);
+  persistState();
+  if (currentTemplateId) renderPreview(currentTemplateId);
+}
+
+function stateObj() {
+  return {
+    payType: getPayType(),
+    account: els.account.value,
+    wallet: els.wallet.value,
+    realName: els.realName.value,
+    bankName: els.bankName.value,
+    turnover: els.turnover.value,
+    custom: els.custom.value,
+    currentTemplateId: currentTemplateId,
+    order: templates.map(t => t.id),
+  };
+}
+
+function persistState() {
+  localStorage.setItem(STORAGE_STATE, JSON.stringify(stateObj()));
+}
+
+function saveOrder() {
+  localStorage.setItem(STORAGE_ORDER, JSON.stringify(templates.map(t => t.id)));
+  persistState();
+}
+
+function saveSnapshot() {
+  lastSnapshot = stateObj();
+  localStorage.setItem(STORAGE_SNAPSHOT, JSON.stringify(lastSnapshot));
+}
+
+function loadSnapshot() {
+  try {
+    const raw = localStorage.getItem(STORAGE_SNAPSHOT);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (e) {
+    return null;
+  }
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_STATE);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return null;
+}
+
+function applyState(obj) {
+  if (!obj) return;
+  setPayType(obj.payType === 'Paymaya' ? 'Paymaya' : 'GCash');
+  els.account.value = obj.account || '';
+  els.wallet.value = obj.wallet || '';
+  els.realName.value = obj.realName || '';
+  els.bankName.value = obj.bankName || '';
+  els.turnover.value = obj.turnover || '';
+  els.custom.value = obj.custom || '';
+  currentTemplateId = obj.currentTemplateId || null;
+  if (Array.isArray(obj.order) && obj.order.length) {
+    reorderByIdList(obj.order, false);
+  }
+}
+
+function restoreOriginalOrder() {
+  templates = [...ORIGINAL_TEMPLATES];
+  currentTemplateId = templates[0]?.id || null;
+  localStorage.removeItem(STORAGE_ORDER);
+  persistState();
+  renderTemplateList();
+  if (currentTemplateId) renderPreview(currentTemplateId);
+}
+
+function reorderByIdList(idList, persist = true) {
+  const map = makeTemplateMap();
+  const ordered = [];
+  idList.forEach(id => {
+    const t = map.get(id);
+    if (t) ordered.push(t);
+    map.delete(id);
+  });
+  for (const t of templates) {
+    if (map.has(t.id)) {
+      ordered.push(t);
+      map.delete(t.id);
+    }
+  }
+  templates = ordered;
+  if (persist) saveOrder();
+}
+
+function restoreOrderFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_ORDER);
+    if (!raw) return false;
+    const ids = JSON.parse(raw);
+    if (!Array.isArray(ids) || !ids.length) return false;
+    reorderByIdList(ids, false);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function escapeHtml(text) {
+  return String(text)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
+}
+
+function paymentWordRegex() {
+  return /GCash|GCASH|Gcash|Paymaya|PAYMAYA|paymaya/g;
+}
+
+function replacePaymentWord(text) {
+  const pay = getPayType();
+  return String(text).replace(paymentWordRegex(), pay);
+}
+
+function colonValueFor(text) {
+  const custom = els.custom.value.trim();
+  const bankName = els.bankName.value.trim();
+  const wallet = els.wallet.value.trim();
+  if (custom) return custom;
+  if (bankName && wallet) return `${bankName}：${wallet}`;
+  if (bankName) return bankName;
+  return wallet;
+}
+
+function fillPlaceholders(text) {
+  if (!text) return '';
+  const account = els.account.value.trim();
+  const wallet = els.wallet.value.trim();
+  const realName = els.realName.value.trim();
+  const bankName = els.bankName.value.trim();
+  const turnover = els.turnover.value.trim();
+  let out = String(text);
+
+  out = out.replaceAll('【真實姓名】', `【${realName}】`);
+  out = replacePaymentWord(out);
+
+  out = out.replace(/Username：\s*$/gm, 'Username：' + account);
+  out = out.replace(/GCash：\s*$/gm, getPayType() + '：' + wallet);
+  out = out.replace(/Paymaya：\s*$/gm, getPayType() + '：' + wallet);
+  out = out.replace(/Bank：\s*$/gm, 'Bank：' + bankName);
+  out = out.replace(/Bank account：\s*$/gm, 'Bank account：' + wallet);
+
+  out = out.replace(/【\s*0\s*】/g, '【' + turnover + '】');
+  out = out.replace(/【\s*GCash\s*：\s*】/gi, '【' + getPayType() + '：' + wallet + '】');
+  out = out.replace(/【\s*Paymaya\s*：\s*】/gi, '【' + getPayType() + '：' + wallet + '】');
+
+  // Special case: "已提供【：】驗證截圖" should use bank name + card number.
+  if (/已提供【\s*：\s*】驗證截圖/.test(out)) {
+    const bankName = els.bankName.value.trim();
+    const wallet = els.wallet.value.trim();
+    const bankCombo = (bankName && wallet) ? (bankName + '：' + wallet) : (bankName || wallet);
+    out = out.replace(/已提供【\s*：\s*】驗證截圖/g, '已提供【' + bankCombo + '】驗證截圖');
+  }
+
+  out = out.replace(/【\s*：\s*】/g, '【' + colonValueFor(out) + '】');
+  out = out.replace(/Reject withdraw : 【】/g, 'Reject withdraw : 【' + account + '】');
+  out = out.replace(/【\s*】/g, '【' + wallet + '】');
+
+  out = out.replaceAll('【付款方式】', '【' + getPayType() + '】');
+  out = out.replace(/Real Name：\s*$/gm, 'Real Name：' + realName);
+  out = out.replace(/Wrong Paymaya：\s*$/gm, 'Wrong Paymaya：' + wallet);
+  return out;
+}
+
+function renderTemplateList() {
+  els.templateList.innerHTML = '';
+  templates.forEach((t, idx) => {
+    const item = document.createElement('div');
+    item.className = 'template-item' + (t.id === currentTemplateId ? ' selected' : '');
+    item.draggable = true;
+    item.dataset.id = t.id;
+    item.innerHTML = `
+      <div class="handle" title="拖曳排序">☰</div>
+      <div class="item-text"><span class="num">${idx + 1}.</span>${escapeHtml(t.zh)}</div>
+    `;
+
+    item.addEventListener('click', () => {
+      currentTemplateId = t.id;
+      renderTemplateList();
+      renderPreview(t.id);
+      persistState();
+    });
+
+    item.addEventListener('dragstart', (e) => {
+      dragId = t.id;
+      item.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', t.id);
+    });
+
+    item.addEventListener('dragend', () => {
+      item.classList.remove('dragging');
+      dragId = null;
+      document.querySelectorAll('.template-item').forEach(el => el.classList.remove('drag-over'));
+    });
+
+    item.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      item.classList.add('drag-over');
+      e.dataTransfer.dropEffect = 'move';
+    });
+
+    item.addEventListener('dragleave', () => {
+      item.classList.remove('drag-over');
+    });
+
+    item.addEventListener('drop', (e) => {
+      e.preventDefault();
+      item.classList.remove('drag-over');
+      const fromId = dragId || e.dataTransfer.getData('text/plain');
+      const toId = t.id;
+      if (!fromId || fromId === toId) return;
+      const fromIndex = templates.findIndex(x => x.id === fromId);
+      const toIndex = templates.findIndex(x => x.id === toId);
+      if (fromIndex < 0 || toIndex < 0) return;
+      const [moved] = templates.splice(fromIndex, 1);
+      templates.splice(toIndex, 0, moved);
+      currentTemplateId = moved.id;
+      saveOrder();
+      renderTemplateList();
+      renderPreview(currentTemplateId);
+    });
+
+    els.templateList.appendChild(item);
+  });
+}
+
+function renderPreview(id) {
+  const t = templates.find(x => x.id === id);
+  if (!t) {
+    els.selectedTitle.textContent = '請選擇一則話術';
+    els.previewZh.textContent = '';
+    els.previewEn.textContent = '';
+    return;
+  }
+  els.selectedTitle.textContent = t.zh;
+  els.previewZh.textContent = fillPlaceholders(t.zh);
+  els.previewEn.textContent = fillPlaceholders(t.en || '');
+  renderTemplateList();
+}
+
+function refreshPreview() {
+  if (currentTemplateId) renderPreview(currentTemplateId);
+  persistState();
+}
+
+function focusNext(el) {
+  const idx = inputOrder.indexOf(el);
+  if (idx >= 0 && idx < inputOrder.length - 1) {
+    const next = inputOrder[idx + 1];
+    next.focus();
+    next.select?.();
+  }
+}
+
+inputOrder.forEach((input) => {
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      focusNext(input);
+    }
+  });
+  input.addEventListener('input', refreshPreview);
+});
+
+function clearCaseData() {
+  saveSnapshot();
+  els.account.value = '';
+  els.wallet.value = '';
+  els.realName.value = '';
+  els.bankName.value = '';
+  els.turnover.value = '';
+  els.custom.value = '';
+  els.account.focus();
+  refreshPreview();
+}
+
+function undoCaseData() {
+  const snap = lastSnapshot || loadSnapshot();
+  if (!snap) return;
+  applyState(snap);
+  renderTemplateList();
+  if (currentTemplateId) renderPreview(currentTemplateId);
+  els.account.focus();
+}
+
+async function copyToClipboard(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  }
+}
+
+els.clearBtn.addEventListener('click', clearCaseData);
+els.undoBtn.addEventListener('click', undoCaseData);
+els.restoreBtn.addEventListener('click', restoreOriginalOrder);
+els.payGcash.addEventListener('click', () => setPayType('GCash'));
+els.payPaymaya.addEventListener('click', () => setPayType('Paymaya'));
+els.copyZh.addEventListener('click', () => copyToClipboard(els.previewZh.textContent));
+els.copyEn.addEventListener('click', () => copyToClipboard(els.previewEn.textContent));
+els.copyBoth.addEventListener('click', () => copyToClipboard(els.previewZh.textContent + '\n\n' + els.previewEn.textContent));
+
+window.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'delete') {
+    e.preventDefault();
+    clearCaseData();
+  }
+});
+
+const savedState = loadState();
+if (savedState) {
+  applyState(savedState);
+} else {
+  currentTemplateId = templates[0]?.id || null;
+}
+
+if (!savedState || !savedState.order) {
+  restoreOrderFromStorage();
+} else {
+  if (Array.isArray(savedState.order) && savedState.order.length) {
+    reorderByIdList(savedState.order, false);
+  }
+}
+
+lastSnapshot = loadSnapshot();
+
+renderTemplateList();
+if (currentTemplateId && templates.some(t => t.id === currentTemplateId)) {
+  renderPreview(currentTemplateId);
+} else if (templates.length) {
+  currentTemplateId = templates[0].id;
+  renderPreview(currentTemplateId);
+}
+
+if (!lastSnapshot) saveSnapshot();
+</script>
+
+<script>
+const CASE_KEY='vt61_cases';
+const CASE_ACTIVE='vt61_active';
+
+function blankCase(){
+ return {account:'',wallet:'',realName:'',bankName:'',turnover:'',custom:''};
+}
+let cases=JSON.parse(localStorage.getItem(CASE_KEY)||'[{}]').map(x=>Object.assign(blankCase(),x));
+if(!cases.length) cases=[blankCase()];
+let activeCase=parseInt(localStorage.getItem(CASE_ACTIVE)||'0');
+
+function currentCaseData(){
+ return {
+  account:els.account.value,wallet:els.wallet.value,realName:els.realName.value,
+  bankName:els.bankName.value,turnover:els.turnover.value,custom:els.custom.value
+ };
+}
+function saveCase(){
+ cases[activeCase]=currentCaseData();
+ localStorage.setItem(CASE_KEY,JSON.stringify(cases));
+}
+function loadCase(i){
+ saveCase();
+ activeCase=i;
+ localStorage.setItem(CASE_ACTIVE,i);
+ let c=cases[i];
+ els.account.value=c.account||'';
+ els.wallet.value=c.wallet||'';
+ els.realName.value=c.realName||'';
+ els.bankName.value=c.bankName||'';
+ els.turnover.value=c.turnover||'';
+ els.custom.value=c.custom||'';
+ refreshPreview();
+ renderCaseBar();
+}
+function renderCaseBar(){
+ const bar=document.getElementById('caseBar');
+ bar.innerHTML='';
+ cases.forEach((c,i)=>{
+   const b=document.createElement('button');
+   b.className='caseTab'+(i===activeCase?' active':'');
+   const name=c.account?c.account:'案件'+(i+1);
+   b.innerHTML=name+' <span class="caseClose">×</span>';
+   b.onclick=(e)=>{
+      if(e.target.classList.contains('caseClose')){
+        if(cases.length===1){loadCase(0);return;}
+        const hasData=Object.values(c).some(v=>String(v||'').trim());
+        if(hasData && !confirm('確定關閉案件 '+name+' ?')) return;
+        cases.splice(i,1);
+        if(activeCase>=cases.length) activeCase=cases.length-1;
+        localStorage.setItem(CASE_KEY,JSON.stringify(cases));
+        loadCase(activeCase);
+      }else{
+        loadCase(i);
+      }
+   };
+   bar.appendChild(b);
+ });
+ const add=document.createElement('button');
+ add.className='caseTab';
+ add.textContent='＋';
+ add.disabled=cases.length>=5;
+ add.onclick=()=>{
+   saveCase();
+   cases.push(blankCase());
+   localStorage.setItem(CASE_KEY,JSON.stringify(cases));
+   loadCase(cases.length-1);
+ };
+ bar.appendChild(add);
+}
+setTimeout(()=>{
+ loadCase(Math.min(activeCase,cases.length-1));
+ document.querySelectorAll('input').forEach(i=>i.addEventListener('input',()=>{saveCase();renderCaseBar();}));
+},100);
+</script>
+
+
+  </div>
+</body>
+</html>
